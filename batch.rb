@@ -27,6 +27,7 @@
 # message.icon_index = state.icon_index
 # $game_troop.members.sample.message_queue.push message#encoding=utf-8
 module Messager
+  VERSION = '0.0.1'
 
   module Vocab
     CounterAttack = 'Контр.'
