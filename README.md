@@ -2,6 +2,7 @@
 ### Зависимости
 - AASM https://github.com/godsent/aasm
 - Ticker https://github.com/godsent/ticker
+
 ### Как использовать:
 - Установите AASM https://github.com/godsent/aasm
 - Установите Ticker https://github.com/godsent/ticker
