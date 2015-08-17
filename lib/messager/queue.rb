@@ -80,7 +80,7 @@ class Messager::Queue
   end
 
   def show_message
-    if message = @messages.shift
+    if spriteset && message = @messages.shift
       spriteset.create_message_popup @target, message
     end
   end

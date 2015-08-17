@@ -48,14 +48,14 @@ module Messager
         monitor_weapons: true,
         monitor_armors: true,
         in_battle: true,
-        allow_collapse_effect: true
+        allow_collapse_effect: false
       }
     end
 
     module Popup
       def settings
         {
-          battler_offset: -120, #distance between battler screen_y and popup
+          battler_offset: -80, #distance between battler screen_y and popup
           character_offset: -50, #distance between character screen_y and popup
           font_size: 24, 
           font_name: 'Arial',
@@ -78,13 +78,19 @@ module Messager
             evasion: [153, 255, 153],
             gain_item: [0, 128, 255],
             gain_weapon: [0, 128, 128],
-            gain_armor:  [34, 139, 34]
+            gain_armor:  [34, 139, 34],
+            damage_to_energy: [225, 125, 0],
+            damage_to_en: [255, 125, 0],
+            heal_energy: [255, 125, 0],
+            heal_en: [255, 125, 0]
           }.tap { |h| h.default = [255, 255, 255] },
 
           postfixes: {
             damage_to_hp: 'HP', heal_hp: 'HP',
             damage_to_tp: 'TP', heal_tp: 'TP',
             damage_to_mp: 'MP', heal_mp: 'MP',
+            damage_to_en: 'EN', damage_to_energy: 'EN',
+            heal_en: 'EN',  heal_energy: 'EN'
           }.tap { |h| h.default = '' }
         }
       end
