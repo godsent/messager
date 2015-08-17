@@ -1,3 +1,4 @@
+#gems/messager/lib/messager.rb
 #encoding=utf-8
 #Popup messages for VX ACE
 #author: Iren_Rin
@@ -48,14 +49,14 @@ module Messager
         monitor_weapons: true,
         monitor_armors: true,
         in_battle: true,
-        allow_collapse_effect: true
+        allow_collapse_effect: false
       }
     end
 
     module Popup
       def settings
         {
-          battler_offset: -120, #distance between battler screen_y and popup
+          battler_offset: -80, #distance between battler screen_y and popup
           character_offset: -50, #distance between character screen_y and popup
           font_size: 24, 
           font_name: 'Arial',
@@ -78,13 +79,19 @@ module Messager
             evasion: [153, 255, 153],
             gain_item: [0, 128, 255],
             gain_weapon: [0, 128, 128],
-            gain_armor:  [34, 139, 34]
+            gain_armor:  [34, 139, 34],
+            damage_to_energy: [225, 125, 0],
+            damage_to_en: [255, 125, 0],
+            heal_energy: [255, 125, 0],
+            heal_en: [255, 125, 0]
           }.tap { |h| h.default = [255, 255, 255] },
 
           postfixes: {
             damage_to_hp: 'HP', heal_hp: 'HP',
             damage_to_tp: 'TP', heal_tp: 'TP',
             damage_to_mp: 'MP', heal_mp: 'MP',
+            damage_to_en: 'EN', damage_to_energy: 'EN',
+            heal_en: 'EN',  heal_energy: 'EN'
           }.tap { |h| h.default = '' }
         }
       end
@@ -92,17 +99,17 @@ module Messager
   end
 end
 
-#gems/../lib/messager/concerns.rb
+#gems/messager/lib/messager/concerns.rb
 module Messager::Concerns
 end
 
-#gems/../lib/messager/concerns/queueable.rb
+#gems/messager/lib/messager/concerns/queueable.rb
 module Messager::Concerns::Queueable
   def message_queue
     @message_queue ||= Messager::Queue.new(self)
   end
 end
-#gems/../lib/messager/concerns/popupable.rb
+#gems/messager/lib/messager/concerns/popupable.rb
 module Messager::Concerns::Popupable
   def create_message_popup(battler, message)
     message_popups << Messager::Popup.new(battler, message)
@@ -153,7 +160,7 @@ module Messager::Concerns::Popupable
     end
   end
 end
-#gems/../lib/messager/popup.rb
+#gems/messager/lib/messager/popup.rb
 class Messager::Popup < Sprite_Base
   include Messager::Settings::Popup
 
@@ -339,19 +346,19 @@ class Messager::Popup < Sprite_Base
     self.x, self.y = current_x, current_y
   end
 end
-#gems/../lib/messager/patch.rb
+#gems/messager/lib/messager/patch.rb
 module Messager::Patch
 end
 
-#gems/../lib/messager/patch/spriteset_battle_patch.rb
+#gems/messager/lib/messager/patch/spriteset_battle_patch.rb
 class Spriteset_Battle
   include Messager::Concerns::Popupable
 end
-#gems/../lib/messager/patch/spriteset_map_patch.rb
+#gems/messager/lib/messager/patch/spriteset_map_patch.rb
 class Spriteset_Map
   include Messager::Concerns::Popupable
 end
-#gems/../lib/messager/patch/window_battle_log_patch.rb
+#gems/messager/lib/messager/patch/window_battle_log_patch.rb
 class Window_BattleLog
   METHODS = %w(
     display_action_results display_use_item display_hp_damage 
@@ -598,7 +605,7 @@ class Window_BattleLog
   end
 
   def damage_message(target, key)
-    value = target.result.public_send "#{key}_damage"
+    value = target.result.public_send("#{key}_damage").to_i
     message(value < 0 ? :"heal_#{key}" : :"damage_to_#{key}").tap do |the_message|
       the_message.damage = value
       the_message.critical = target.result.critical
@@ -609,19 +616,57 @@ class Window_BattleLog
     Messager::Queue::Message.new type
   end
 end
-#gems/../lib/messager/patch/game_battler_patch.rb
+#gems/messager/lib/messager/patch/game_battler_patch.rb
 class Game_Battler
   include Messager::Concerns::Queueable
+
+  def add_hp_with_popup(value)
+    self.hp += value
+    heal_popup value, :hp
+  end
+
+  def add_mp_with_popup(value)
+    self.mp += value
+    heal_popup value, :mp
+  end
+
+  def add_tp_with_popup(value)
+    self.tp += value
+    heal_popup value, :tp
+  end
+
+  def add_en_with_popup(value)
+    self.energy += value
+    heal_popup value, :energy
+  end
+
+  def heal_popup(value, key)
+    message_queue.push damage_message(value, key) if on_screen?
+  end
+
+  private
+
+  def on_screen?
+    respond_to?(:screen_x) && respond_to?(:screen_y)
+  end
+
+  def damage_message(value, key, critical = false)
+    type = value > 0 ? :"heal_#{key}" : :"damage_to_#{key}"
+    Messager::Queue::Message.new(type).tap do |message|
+      message.damage = -value
+      message.critical = critical
+    end
+  end
 end
-#gems/../lib/messager/patch/game_player_patch.rb
+#gems/messager/lib/messager/patch/game_player_patch.rb
 class Game_Player
   include Messager::Concerns::Queueable
 end
-#gems/../lib/messager/patch/game_follower_patch.rb
+#gems/messager/lib/messager/patch/game_follower_patch.rb
 class Game_Follower
   include Messager::Concerns::Queueable
 end
-#gems/../lib/messager/patch/game_interpreter_patch.rb
+#gems/messager/lib/messager/patch/game_interpreter_patch.rb
  class Game_Interpreter
   #--------------------------------------------------------------------------
   # * Change Gold
@@ -671,7 +716,7 @@ end
     command_128_for_messager
   end
 end
-#gems/../lib/messager/queue.rb
+#gems/messager/lib/messager/queue.rb
 class Messager::Queue
   TIMEOUT = 30 #frames
   include AASM
@@ -754,7 +799,7 @@ class Messager::Queue
   end
 
   def show_message
-    if message = @messages.shift
+    if spriteset && message = @messages.shift
       spriteset.create_message_popup @target, message
     end
   end
@@ -770,7 +815,7 @@ class Messager::Queue
   end
 end
 
-#gems/../lib/messager/queue/message.rb
+#gems/messager/lib/messager/queue/message.rb
 class Messager::Queue::Message
   attr_accessor :icon_index, :damage, :text
   attr_writer :critical
