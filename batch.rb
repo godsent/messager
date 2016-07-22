@@ -12,7 +12,7 @@
 #for battlers with defined screen_x and screen_y.
 #By default only enemies has these coordinates.
 #3) You can call message popup manually with following
-#a) 
+#a)
 # battler = $game_troop.members[0]
 # battler.message_queue.damage_to_hp 250
 # battler.message_queue.heal_tp 100
@@ -28,7 +28,7 @@
 # message.icon_index = state.icon_index
 # $game_troop.members.sample.message_queue.push message#encoding=utf-8
 module Messager
-  VERSION = '0.0.1'
+  VERSION = '0.1'
 
   module Vocab
     CounterAttack = 'Контр.'
@@ -58,10 +58,10 @@ module Messager
         {
           battler_offset: -80, #distance between battler screen_y and popup
           character_offset: -50, #distance between character screen_y and popup
-          font_size: 24, 
+          font_size: 24,
           font_name: 'Arial',
           dead_timeout: 70, #in frames, time to dispose popup
-          icon_width: 24, 
+          icon_width: 24,
           icon_height: 24,
 
           colors: { #RGB
@@ -136,9 +136,9 @@ module Messager::Concerns::Popupable
   end
 
   def self.included(klass)
-    klass.class_eval do 
+    klass.class_eval do
       attr_reader :viewport2
-      attr_writer :message_popups 
+      attr_writer :message_popups
 
       alias original_initialize_for_message_popups initialize
       def initialize
@@ -173,7 +173,7 @@ class Messager::Popup < Sprite_Base
     create_rects
     create_bitmap
     self.visible, self.z = true, 199
-    Ticker.delay settings[:dead_timeout] do 
+    Ticker.delay settings[:dead_timeout] do
       spriteset.remove_message_popup self
     end
     update
@@ -253,7 +253,7 @@ class Messager::Popup < Sprite_Base
   end
 
   def display_text
-    configure_font! bitmap 
+    configure_font! bitmap
     bitmap.draw_text @text_rect, text, 1
   end
 
@@ -331,8 +331,8 @@ class Messager::Popup < Sprite_Base
     result = @target.screen_x + x_offset
     if result < 0
       0
-    elsif result > Graphics.width - width 
-      Graphics.width - width 
+    elsif result > Graphics.width - width
+      Graphics.width - width
     else
       result
     end
@@ -361,14 +361,14 @@ end
 #gems/messager/lib/messager/patch/window_battle_log_patch.rb
 class Window_BattleLog
   METHODS = %w(
-    display_action_results display_use_item display_hp_damage 
+    display_action_results display_use_item display_hp_damage
     display_mp_damage display_tp_damage
     display_counter display_reflection display_substitute
     display_failure display_miss display_evasion display_affected_status
     display_auto_affected_status display_added_states display_removed_states
     display_current_state display_changed_buffs display_buffs
   )
-  
+
   METHODS.each { |name| alias_method "#{name}_for_messager", name }
 
   def queue(battler)
@@ -398,7 +398,7 @@ class Window_BattleLog
     if enabled? subject
       queue(subject).push icon_message(
         item.icon_index,
-        item.is_a?(RPG::Skill) ? :cast : :use, 
+        item.is_a?(RPG::Skill) ? :cast : :use,
         item.name
       )
     else
@@ -549,7 +549,7 @@ class Window_BattleLog
           target.perform_collapse_effect
           wait
           wait_for_effect
-        end 
+        end
         queue(target).push icon_message(state.icon_index, :icon, state.name)
       end
     else
@@ -601,7 +601,7 @@ class Window_BattleLog
     message(type).tap do |object|
       object.icon_index = icon_index
       object.text = text
-    end 
+    end
   end
 
   def damage_message(target, key)
@@ -701,7 +701,7 @@ end
     if Messager::Settings.general[:monitor_weapons] && weapon
       $game_player.message_queue.gain_weapon weapon, value
     end
-    command_127_for_messager 
+    command_127_for_messager
   end
   #--------------------------------------------------------------------------
   # * Change Armor
@@ -721,26 +721,26 @@ class Messager::Queue
   TIMEOUT = 30 #frames
   include AASM
 
-  aasm do 
+  aasm do
     state :ready, initial: true
     state :beasy
 
     event :load do
-      transitions to: :beasy 
+      transitions to: :beasy
 
       after do
         show_message
       end
 
       after do
-        Ticker.delay TIMEOUT do 
+        Ticker.delay TIMEOUT do
           check
         end
       end
     end
 
-    event :release do 
-      transitions to: :ready 
+    event :release do
+      transitions to: :ready
     end
   end
 
@@ -752,7 +752,7 @@ class Messager::Queue
     %w(heal damage_to).each do |prefix|
       name = "#{prefix}_#{postfix}"
       define_method name do |value, critical = false|
-        message = Messager::Queue::Message.new name.to_sym 
+        message = Messager::Queue::Message.new name.to_sym
         message.damage = prefix == 'heal' ? -value : value
         message.critical = critical
         push message
@@ -761,14 +761,14 @@ class Messager::Queue
   end
 
   def cast(spell)
-    message = Messager::Queue::Message.new :cast 
+    message = Messager::Queue::Message.new :cast
     message.text = spell.name
     message.icon_index = spell.icon_index
     push message
   end
 
   def gain_item(item, number = 1, type = 'item')
-    message = Messager::Queue::Message.new :"gain_#{type}" 
+    message = Messager::Queue::Message.new :"gain_#{type}"
     message.text = "#{sign number}#{number} #{item.name}"
     message.icon_index = item.icon_index
     push message
@@ -794,6 +794,10 @@ class Messager::Queue
     check if ready?
   end
 
+  def push_text(text)
+    push text_message(text)
+  end
+
   def check
     @messages.any? ? load : release
   end
@@ -805,6 +809,10 @@ class Messager::Queue
   end
 
   private
+
+  def text_message(text)
+    Messager::Queue::Message.new(:damage_to_hp).tap { |m| m.text = text }
+  end
 
   def spriteset
     SceneManager.scene.instance_variable_get :@spriteset

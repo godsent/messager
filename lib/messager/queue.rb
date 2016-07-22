@@ -75,6 +75,10 @@ class Messager::Queue
     check if ready?
   end
 
+  def push_text(text)
+    push text_message(text)
+  end
+
   def check
     @messages.any? ? load : release
   end
@@ -86,6 +90,10 @@ class Messager::Queue
   end
 
   private
+
+  def text_message(text)
+    Messager::Queue::Message.new(:damage_to_hp).tap { |m| m.text = text }
+  end
 
   def spriteset
     SceneManager.scene.instance_variable_get :@spriteset
